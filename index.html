@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game</title>
+  <!-- style -->
+  <style type="text/css" media="all">
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      color: #E9FFFB;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #06060D;
+      background-image:
+        linear-gradient(to right, #110C17 3.89px, transparent 3.89px),
+        linear-gradient(to bottom, #110C17 3.89px, transparent 3.89px);
+      background-size: 5px 5px;
+      overflow: hidden;
+      /* Adjust grid spacing */
+    }
+
+    .display {
+      display: flex;
+      position: relative;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .display .player {
+      width: 150px;
+      height: 300px;
+      display: flex;
+      position: relative;
+      border: 1px solid #FEFDFFD6;
+      backdrop-filter: blur(1px);
+      margin: 5px;
+      border-radius: 9.30px;
+      flex-direction: column;
+      padding: 5px;
+    }
+
+    .display .player .value {
+      width: 100%;
+      height: 150px;
+      background: #1A2638;
+      border-radius: 20px;
+      border: 1px solid #245399;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1160D5;
+      font-size: 6em;
+    }
+
+    .button {
+      display: flex;
+      justify-content: center;
+      margin: 20px auto;
+      padding: 10px;
+      align-items: center;
+    }
+
+    .button button {
+      padding: 6px 30px;
+      background: #F6FBFC;
+      outline: none;
+      border: 1px solid #B4B7D1;
+      border-radius: 11px;
+      box-shadow: 0 5px 0 #BDC1C4;
+      color: #160841;
+      font-weight: 500;
+      letter-spacing: .6px;
+      transition: .12s;
+
+    }
+
+    #user_button:active {
+      box-shadow: none;
+      transform: scaleX(.86);
+      transition: .12s;
+    }
+
+    .score {
+      background: #0D1229;
+      display: flex;
+      align-items: center;
+      padding: 5px;
+      letter-spacing: .6px;
+      border-radius: 10px;
+    }
+
+    .score p {
+      margin: auto 10px;
+    }
+
+    #result {
+      position: absolute;
+      top: 15%;
+      transition: .34s;
+      font-size: 1.2em;
+      padding: 6px 20px;
+      color: #E1A20A;
+      font-weight: 500;
+      letter-spacing: 1px;
+      background: transparent;
+    }
+
+    #playAgain {
+      position: absolute;
+      bottom: 16%;
+      background: transparent;
+    }
+
+    #again {
+      padding: 7px 35px;
+      font-size: 1.1em;
+      letter-spacing: .3px;
+      font-weight: 450;
+      background: #78A33A;
+      color: #1B2808;
+      border: none;
+      outline: none;
+      box-shadow: 0 4.5px 0 #68932B;
+      border-radius: 16px;
+      transition: .3s;
+    }
+
+    #again:hover {
+      box-shadow: none;
+      transform: scaleX(.83);
+      transition: .3s;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      z-index: -5;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="result"></div>
+  <div class="display">
+    <!-- computer player-->
+    <div class="computer_player player">
+      <div class="computerValue value" id="c_num"></div>
+      <div class="button"><button id='computer_button' type="submit">Robert</button></div>
+      <div class="score">HG Score: <p id="c_score">00</p>
+      </div>
+    </div>
+
+    <!-- User player -->
+    <div class="User_player player">
+      <div class="userValue value" id="u_num"></div>
+      <div class="button"><button id='user_button' type="submit">Guest</button></div>
+      <div class="score">HG Score: <p id="u_score">00</p>
+      </div>
+    </div>
+  </div>
+  <div id="playAgain">
+    <button id="again" type="submit">Play Again</button>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+
+
+  <script type="text/javascript" charset="utf-8" defer>
+    let randomC = `${Math.floor(Math.random() * 256)},
+${Math.floor(Math.random() * 256) },
+${Math.floor(Math.random() * 256)},${0.45}`;
+
+    document.body.style.backgroundColor = `rgba(${randomC})`;
+
+    //Display
+    const cNum = document.getElementById('c_num');
+    const uNum = document.getElementById('u_num');
+
+
+    //button
+    const robertBtn = document.getElementById('computer_button');
+    const userBtn = document.getElementById('user_button');
+    let playAgain = document.getElementById('again');
+
+    //score
+    const cScore = document.getElementById('c_score');
+    const uScore = document.getElementById('u_score');
+
+    playAgain.addEventListener('click', () => {
+      location.reload();
+    })
+
+
+
+    let userId = localStorage.getItem("userId");
+    if (!userId) {
+      let userName = prompt('Enter Your Name...');
+      // user Id
+      function userIdGenerate(userName) {
+        let random = Math.floor(Math.random() * (20 - 11 + 1)) + 11;
+        let slice = userName.slice(0, 2);
+        return `@${slice.toLowerCase()}-${random}`;
+      }
+      userId = userIdGenerate(userName);
+      localStorage.setItem("userId", userId);
+    }
+    userBtn.textContent = userId;
+
+    let userScore = 0;
+    let computerScore = 0;
+    let userMinClick = 0;
+    let userMaxClick = 10;
+    let isAutoClick = false;
+    const result = document.getElementById('result');
+
+    userBtn.addEventListener('click', () => {
+      userBtn.disabled = true;
+      setTimeout(() => {
+        userBtn.disabled = false;
+      }, 1500);
+      if (userMinClick < userMaxClick) {
+        uNum.textContent = Math.floor(Math.random() * 10) + 1;
+        userScore += Number(uNum.textContent);
+        uScore.textContent = userScore;
+        userMinClick++;
+        if (userMinClick === userMaxClick) {
+          userBtn.disabled = true;
+          uNum.textContent = userScore;
+          uNum.style.color = 'white';
+
+          if (computerScore < userScore) {
+            result.textContent = `🏆 ${userId} Winner 🏆`;
+            document.body.style.backgroundImage = 'none';
+            document.body.style.backgroundColor = 'black';
+
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const gravity = 0.05;
+            const friction = 0.98;
+            let stars = [];
+
+            class Star {
+              constructor(x, y, size, color, velocity) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.velocity = velocity;
+                this.alpha = 1;
+                this.bounceFactor = 0.7;
+              }
+
+              update() {
+                this.velocity.y += gravity;
+                this.velocity.x *= friction;
+                this.velocity.y *= friction;
+
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+
+                if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+                  this.velocity.x *= -this.bounceFactor;
+                }
+                if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+                  this.velocity.y *= -this.bounceFactor;
+                }
+
+                this.alpha -= 0.003;
+              }
+
+              draw() {
+                ctx.globalAlpha = this.alpha;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+              }
+            }
+
+            function randomColor() {
+              const colors = ["#ffcc00", "#ff6600", "#ffffff", "#ff3366", "#33ccff", "#33ff66", "#ff33cc", "#6633ff"];
+              return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            function createExplosion(x, y) {
+              for (let i = 0; i < 40; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 6 + 2;
+                let velocity = { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed };
+                let size = Math.random() * 4 + 2;
+                let color = randomColor();
+                stars.push(new Star(x, y, size, color, velocity));
+              }
+            }
+
+            function autoClick() {
+              let x = Math.random() * canvas.width;
+              let y = Math.random() * canvas.height;
+              createExplosion(x, y);
+            }
+
+            function animate() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              stars.forEach((star, index) => {
+                star.update();
+                star.draw();
+                if (star.alpha <= 0) stars.splice(index, 1);
+              });
+              requestAnimationFrame(animate);
+            }
+
+            canvas.addEventListener("click", (e) => {
+              createExplosion(e.clientX, e.clientY);
+            });
+
+            setInterval(autoClick, 1000);
+
+            animate();
+
+
+          } else if (computerScore === userScore) {
+            result.textContent = '🟰 Equal';
+          } else {
+            result.textContent = '🏆 Robert Winner 🏆';
+          }
+        }
+      }
+      setTimeout(() => {
+        isAutoClick = true;
+        robertBtn.click();
+        isAutoClick = false;
+      }, 1000)
+    })
+    robertBtn.addEventListener('click', (even) => {
+      if (!isAutoClick) {
+        event.preventDefault();
+        alert('you cannot click.');
+      } else {
+        if (userMinClick !== userMaxClick) {
+          cNum.textContent = Math.floor(Math.random() * 10) + 1;
+          computerScore += Number(cNum.textContent);
+          cScore.textContent = computerScore;
+        } else if (userMinClick === userMaxClick) {
+          cNum.textContent = computerScore;
+          cNum.style.color = 'white';
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
